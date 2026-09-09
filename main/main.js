@@ -9,6 +9,7 @@ const PtyManager = require('./ptys');
 const StatusEngine = require('./status');
 const HookServer = require('./hooks-server');
 const PRESETS = require('./presets');
+const { rebuildMenu } = require('./menu');
 const { installClaudeHooks } = require('../scripts/install-claude-hooks');
 
 const SMOKE = process.argv.includes('--smoke');
@@ -44,7 +45,9 @@ hookServer.onDebug = async (url) => {
   if (url.pathname === '/debug/view') {
     if (!win) throw new Error('sem janela');
     const type = url.searchParams.get('type') || 'dashboard';
-    if (type === 'settings') {
+    if (url.searchParams.get('action')) {
+      win.webContents.send('ui:action', url.searchParams.get('action'));
+    } else if (type === 'settings') {
       win.webContents.send('ui:open-settings');
     } else {
       win.webContents.send('ui:set-view', {
@@ -59,6 +62,20 @@ hookServer.onDebug = async (url) => {
 
 let win = null;
 let saveTimer = null;
+let menuCaptureMode = false;
+
+function refreshMenu() {
+  rebuildMenu({
+    settings: state.settings,
+    captureMode: menuCaptureMode,
+    onAction: (action) => {
+      if (win && !win.isDestroyed()) {
+        win.show();
+        win.webContents.send('ui:action', action);
+      }
+    }
+  });
+}
 
 function saveSoon() {
   clearTimeout(saveTimer);
@@ -251,6 +268,13 @@ function registerIpc() {
     state.settings = { ...(state.settings || {}), ...patch };
     saveSoon();
     broadcast();
+    refreshMenu();
+  });
+
+  // Desliga os accelerators do menu enquanto o usuário grava um atalho novo
+  ipcMain.handle('menu:capture-mode', (_e, { on }) => {
+    menuCaptureMode = !!on;
+    refreshMenu();
   });
 
   ipcMain.handle('presets:setCommands', (_e, map) => {
@@ -387,6 +411,7 @@ app.whenReady().then(async () => {
   }
 
   registerIpc();
+  refreshMenu();
   createWindow();
 
   app.on('activate', () => {

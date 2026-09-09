@@ -560,26 +560,9 @@ function openNewTerminalModal() {
 $('#term-add').addEventListener('click', openNewTerminalModal);
 
 // ---------- Atalhos ----------
-const DEFAULT_SHORTCUTS = {
-  'new-terminal': { meta: true, key: 't' },
-  'next-tab': { ctrl: true, key: 'Tab' },
-  'prev-tab': { ctrl: true, shift: true, key: 'Tab' },
-  'next-workspace': { meta: true, shift: true, key: 'ArrowDown' },
-  'prev-workspace': { meta: true, shift: true, key: 'ArrowUp' },
-  dashboard: { meta: true, key: 'd' },
-  'next-attention': { meta: true, key: 'j' },
-  settings: { meta: true, key: ',' }
-};
-const ACTION_LABELS = {
-  'new-terminal': 'Nova aba (terminal)',
-  'next-tab': 'Próxima aba',
-  'prev-tab': 'Aba anterior',
-  'next-workspace': 'Próximo workspace',
-  'prev-workspace': 'Workspace anterior',
-  dashboard: 'Abrir dashboard',
-  'next-attention': 'Pular p/ quem precisa de você',
-  settings: 'Abrir ajustes'
-};
+// Os atalhos são registrados como accelerators do menu nativo (main/menu.js) —
+// o main manda a ação via 'ui:action'. Aqui fica só a UI de configuração.
+const { DEFAULT_SHORTCUTS, ACTION_LABELS } = require('../main/shortcuts');
 let capturingShortcut = false;
 
 function effShortcuts() {
@@ -587,16 +570,6 @@ function effShortcuts() {
 }
 function normKey(k) {
   return k.length === 1 ? k.toLowerCase() : k;
-}
-function comboMatches(ev, c) {
-  if (!c) return false;
-  return (
-    !!ev.metaKey === !!c.meta &&
-    !!ev.ctrlKey === !!c.ctrl &&
-    !!ev.altKey === !!c.alt &&
-    !!ev.shiftKey === !!c.shift &&
-    normKey(ev.key) === normKey(c.key)
-  );
 }
 function comboLabel(c) {
   if (!c) return '—';
@@ -650,23 +623,11 @@ const ACTION_RUNNERS = {
   settings: () => openSettingsModal()
 };
 
-window.addEventListener(
-  'keydown',
-  (ev) => {
-    if (!S || capturingShortcut) return;
-    if (!(ev.metaKey || ev.ctrlKey || ev.altKey)) return;
-    const shortcuts = effShortcuts();
-    for (const [action, combo] of Object.entries(shortcuts)) {
-      if (comboMatches(ev, combo)) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        ACTION_RUNNERS[action]?.();
-        return;
-      }
-    }
-  },
-  true // fase de captura: funciona mesmo com o foco dentro do xterm
-);
+// Ações disparadas pelos accelerators do menu nativo
+ipcRenderer.on('ui:action', (_e, action) => {
+  if (!S || capturingShortcut) return;
+  ACTION_RUNNERS[action]?.();
+});
 
 // ---------- Ajustes ----------
 function openSettingsModal() {
@@ -742,6 +703,7 @@ function openSettingsModal() {
   };
   const beginCapture = (btn, action) => {
     capturingShortcut = true;
+    ipcRenderer.invoke('menu:capture-mode', { on: true }); // senão o accelerator engole a tecla
     btn.classList.add('capturing');
     btn.textContent = 'pressione…';
     const onKey = (ev) => {
@@ -765,6 +727,7 @@ function openSettingsModal() {
     const finish = () => {
       window.removeEventListener('keydown', onKey, true);
       capturingShortcut = false;
+      ipcRenderer.invoke('menu:capture-mode', { on: false });
       refreshList();
     };
     window.addEventListener('keydown', onKey, true);

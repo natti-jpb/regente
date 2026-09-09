@@ -1,0 +1,45 @@
+{
+  "name": "regente",
+  "productName": "Regente",
+  "version": "0.1.0",
+  "description": "Ambiente para orquestrar e visualizar terminais com agentes de código (Maestri melhorado)",
+  "main": "main/main.js",
+  "private": true,
+  "author": "João Bonatti",
+  "scripts": {
+    "start": "electron .",
+    "smoke": "electron . --smoke",
+    "hooks:install": "node scripts/install-claude-hooks.js",
+    "dist": "electron-builder --dir",
+    "postinstall": "electron-rebuild -f -w node-pty"
+  },
+  "build": {
+    "appId": "app.bonatti.regente",
+    "productName": "Regente",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main/**/*",
+      "renderer/**/*",
+      "scripts/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/node-pty/**/*"
+    ],
+    "mac": {
+      "identity": null,
+      "category": "public.app-category.developer-tools"
+    }
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "node-pty": "^1.0.0"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.6.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^26.15.3"
+  }
+}

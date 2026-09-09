@@ -10,6 +10,7 @@ const StatusEngine = require('./status');
 const HookServer = require('./hooks-server');
 const PRESETS = require('./presets');
 const { rebuildMenu } = require('./menu');
+const { effectiveShortcuts } = require('./shortcuts');
 const { installClaudeHooks } = require('../scripts/install-claude-hooks');
 
 const SMOKE = process.argv.includes('--smoke');
@@ -42,6 +43,14 @@ hookServer.onDebug = async (url) => {
     fs.writeFileSync(file, img.toPNG());
     return { saved: file };
   }
+  if (url.pathname === '/debug/key') {
+    if (!win) throw new Error('sem janela');
+    const keyCode = url.searchParams.get('key');
+    const modifiers = (url.searchParams.get('mods') || '').split(',').filter(Boolean);
+    win.webContents.sendInputEvent({ type: 'keyDown', keyCode, modifiers });
+    win.webContents.sendInputEvent({ type: 'keyUp', keyCode, modifiers });
+    return { sent: keyCode, modifiers };
+  }
   if (url.pathname === '/debug/view') {
     if (!win) throw new Error('sem janela');
     const type = url.searchParams.get('type') || 'dashboard';
@@ -64,17 +73,37 @@ let win = null;
 let saveTimer = null;
 let menuCaptureMode = false;
 
+// Dedupe: um atalho pode chegar tanto pelo accelerator do menu (combos com ⌘)
+// quanto pelo before-input-event — nunca disparar a mesma ação em dobro.
+let lastAction = { action: null, at: 0 };
+function dispatchAction(action) {
+  if (!win || win.isDestroyed()) return;
+  const now = Date.now();
+  if (lastAction.action === action && now - lastAction.at < 80) return;
+  lastAction = { action, at: now };
+  win.show();
+  win.webContents.send('ui:action', action);
+}
+
 function refreshMenu() {
   rebuildMenu({
     settings: state.settings,
     captureMode: menuCaptureMode,
-    onAction: (action) => {
-      if (win && !win.isDestroyed()) {
-        win.show();
-        win.webContents.send('ui:action', action);
-      }
-    }
+    onAction: dispatchAction
   });
+}
+
+// input do before-input-event (input.control/meta/alt/shift, input.key) vs combo salvo
+function inputMatchesCombo(input, c) {
+  if (!c) return false;
+  const norm = (k) => (k.length === 1 ? k.toLowerCase() : k);
+  return (
+    !!input.meta === !!c.meta &&
+    !!input.control === !!c.ctrl &&
+    !!input.alt === !!c.alt &&
+    !!input.shift === !!c.shift &&
+    norm(input.key) === norm(c.key)
+  );
 }
 
 function saveSoon() {
@@ -313,6 +342,22 @@ function createWindow() {
     }
   });
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+
+  // Atalhos que o menu do macOS não intercepta (ex: ⌃⇥ com foco no terminal):
+  // interceptamos aqui, ANTES da tecla chegar no xterm.
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown' || menuCaptureMode) return;
+    if (!(input.meta || input.control || input.alt)) return;
+    const shortcuts = effectiveShortcuts(state.settings);
+    for (const [action, combo] of Object.entries(shortcuts)) {
+      if (inputMatchesCombo(input, combo)) {
+        event.preventDefault();
+        dispatchAction(action);
+        return;
+      }
+    }
+  });
+
   win.on('closed', () => {
     win = null;
   });

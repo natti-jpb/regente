@@ -450,6 +450,18 @@ function promptModal(title, initial, onSubmit) {
   m.querySelector('[data-act=ok]').addEventListener('click', submit);
 }
 
+// Enter envia o formulário do modal (quando o foco não está num botão —
+// botão focado deixa o clique nativo agir, senão dispararia em dobro)
+function bindEnterSubmit(m, submit) {
+  m.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Enter') return;
+    if (ev.target.tagName === 'BUTTON') return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    submit();
+  });
+}
+
 // ---------- Workspaces ----------
 function openNewWorkspaceModal() {
   const m = openModal(`
@@ -471,13 +483,15 @@ function openNewWorkspaceModal() {
     if (dir) m.querySelector('#ws-dir').value = dir;
   });
   m.querySelector('[data-act=cancel]').addEventListener('click', closeModal);
-  m.querySelector('[data-act=ok]').addEventListener('click', async () => {
+  const create = async () => {
     const name = m.querySelector('#ws-name').value.trim() || 'Workspace';
     const dir = m.querySelector('#ws-dir').value.trim();
     closeModal();
     const id = await ipcRenderer.invoke('ws:create', { name, dir });
     setView({ type: 'workspace', id });
-  });
+  };
+  m.querySelector('[data-act=ok]').addEventListener('click', create);
+  bindEnterSubmit(m, create);
 }
 $('#ws-add').addEventListener('click', openNewWorkspaceModal);
 
@@ -536,6 +550,7 @@ function openNewTerminalModal() {
       <button class="primary-btn" data-act="ok">Abrir</button>
     </div>`);
   const cmdInput = m.querySelector('#t-cmd');
+  m.querySelector('#t-title').focus();
   for (const btn of m.querySelectorAll('.preset-btn')) {
     btn.addEventListener('click', () => {
       selected = S.presets.find((p) => p.id === btn.dataset.preset);
@@ -550,7 +565,7 @@ function openNewTerminalModal() {
     if (dir) m.querySelector('#t-cwd').value = dir;
   });
   m.querySelector('[data-act=cancel]').addEventListener('click', closeModal);
-  m.querySelector('[data-act=ok]').addEventListener('click', async () => {
+  const create = async () => {
     const cwd = m.querySelector('#t-cwd').value.trim();
     const title = m.querySelector('#t-title').value.trim();
     const command = cmdInput.value.trim();
@@ -566,7 +581,9 @@ function openNewTerminalModal() {
       saveAsDefault
     });
     if (id) activeTab.set(ws.id, id);
-  });
+  };
+  m.querySelector('[data-act=ok]').addEventListener('click', create);
+  bindEnterSubmit(m, create);
 }
 $('#term-add').addEventListener('click', openNewTerminalModal);
 

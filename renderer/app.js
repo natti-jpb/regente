@@ -407,15 +407,25 @@ window.addEventListener('keydown', (ev) => {
 function confirmModal(title, message, onConfirm) {
   const m = openModal(`
     <h2>${esc(title)}</h2>
-    <p class="note">${esc(message)}</p>
+    <p class="note">${esc(message)} <span class="note-key">↩ confirma · Esc cancela</span></p>
     <div class="modal-actions">
       <button class="ghost-btn" data-act="cancel">Cancelar</button>
       <button class="primary-btn" data-act="ok">Confirmar</button>
     </div>`);
-  m.querySelector('[data-act=cancel]').addEventListener('click', closeModal);
-  m.querySelector('[data-act=ok]').addEventListener('click', () => {
+  const ok = () => {
     closeModal();
     onConfirm();
+  };
+  m.querySelector('[data-act=cancel]').addEventListener('click', closeModal);
+  const okBtn = m.querySelector('[data-act=ok]');
+  okBtn.addEventListener('click', ok);
+  okBtn.focus(); // Confirmar pré-selecionado: Enter confirma direto
+  m.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      ev.stopPropagation();
+      ok();
+    }
   });
 }
 
@@ -441,7 +451,7 @@ function promptModal(title, initial, onSubmit) {
 }
 
 // ---------- Workspaces ----------
-$('#ws-add').addEventListener('click', () => {
+function openNewWorkspaceModal() {
   const m = openModal(`
     <h2>Novo workspace</h2>
     <label>Nome</label>
@@ -468,7 +478,8 @@ $('#ws-add').addEventListener('click', () => {
     const id = await ipcRenderer.invoke('ws:create', { name, dir });
     setView({ type: 'workspace', id });
   });
-});
+}
+$('#ws-add').addEventListener('click', openNewWorkspaceModal);
 
 function renameWorkspace(ws) {
   promptModal('Renomear workspace', ws.name, (name) =>
@@ -573,7 +584,10 @@ function normKey(k) {
 }
 function comboLabel(c) {
   if (!c) return '—';
-  const KEYS = { Tab: '⇥', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', ' ': 'Espaço' };
+  const KEYS = {
+    Tab: '⇥', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
+    ' ': 'Espaço', Backspace: '⌫', Delete: '⌦', Enter: '↩'
+  };
   let s = '';
   if (c.ctrl) s += '⌃';
   if (c.alt) s += '⌥';
@@ -613,6 +627,16 @@ const ACTION_RUNNERS = {
   'new-terminal': () => {
     if (view.type !== 'workspace') return;
     openNewTerminalModal();
+  },
+  'new-workspace': () => openNewWorkspaceModal(),
+  'close-tab': () => {
+    const ws = currentWs();
+    const t = ws && activeTermOf(ws);
+    if (t) closeTerminal(t);
+  },
+  'delete-workspace': () => {
+    const ws = currentWs();
+    if (ws) deleteWorkspace(ws);
   },
   'next-tab': () => cycleTab(1),
   'prev-tab': () => cycleTab(-1),

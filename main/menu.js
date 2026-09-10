@@ -29,8 +29,15 @@ function rebuildMenu({ settings, captureMode, onAction }) {
       ]
     },
     {
+      // sem role 'close' aqui: o accelerator padrão dele (⌘W) roubaria o atalho de aba
       label: 'Arquivo',
-      submenu: [item('new-terminal'), { type: 'separator' }, { role: 'close', label: 'Fechar janela' }]
+      submenu: [
+        item('new-terminal'),
+        item('new-workspace'),
+        { type: 'separator' },
+        item('close-tab'),
+        item('delete-workspace')
+      ]
     },
     { role: 'editMenu', label: 'Editar' },
     {

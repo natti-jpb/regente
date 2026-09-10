@@ -1,17 +1,23 @@
 // Definições de atalhos compartilhadas entre main (menu) e renderer (UI de ajustes).
 const DEFAULT_SHORTCUTS = {
   'new-terminal': { meta: true, key: 't' },
-  'next-tab': { ctrl: true, key: 'Tab' },
-  'prev-tab': { ctrl: true, shift: true, key: 'Tab' },
-  'next-workspace': { meta: true, shift: true, key: 'ArrowDown' },
-  'prev-workspace': { meta: true, shift: true, key: 'ArrowUp' },
-  dashboard: { meta: true, key: 'd' },
-  'next-attention': { meta: true, key: 'j' },
-  settings: { meta: true, key: ',' }
+  'new-workspace': { meta: true, key: 'n' },
+  'close-tab': { meta: true, key: 'Backspace' },
+  'delete-workspace': { meta: true, shift: true, key: 'Backspace' },
+  'next-tab': { meta: true, key: 's' },
+  'prev-tab': { meta: true, key: 'w' },
+  'next-workspace': { meta: true, shift: true, key: 's' },
+  'prev-workspace': { meta: true, shift: true, key: 'w' },
+  dashboard: { meta: true, key: '1' },
+  'next-attention': { meta: true, key: '2' },
+  settings: { meta: true, key: '3' }
 };
 
 const ACTION_LABELS = {
   'new-terminal': 'Nova aba (terminal)',
+  'new-workspace': 'Novo workspace',
+  'close-tab': 'Fechar aba atual',
+  'delete-workspace': 'Excluir workspace atual',
   'next-tab': 'Próxima aba',
   'prev-tab': 'Aba anterior',
   'next-workspace': 'Próximo workspace',

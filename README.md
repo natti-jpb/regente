@@ -22,7 +22,7 @@ cp -R dist/mac-arm64/Regente.app /Applications/
 
 ## Ajustes (⚙ na sidebar, ou ⌘,)
 
-- **Atalhos** — todas as ações são reconfiguráveis (clique no atalho e pressione a combinação nova). Padrões: ⌘T nova aba · ⌃⇥ / ⌃⇧⇥ próxima/anterior aba · ⌘⇧↓/↑ próximo/anterior workspace · ⌘D dashboard · ⌘J pula pro terminal que precisa de você · ⌘, ajustes.
+- **Atalhos** — todas as ações são reconfiguráveis (clique no atalho e pressione a combinação nova). Padrões: ⌘T nova aba · ⌘N novo workspace · ⌘⌫ fecha aba · ⌘⇧⌫ exclui workspace · ⌘S/⌘W próxima/anterior aba · ⌘⇧S/⌘⇧W próximo/anterior workspace · ⌘1 dashboard · ⌘2 pula pro terminal que precisa de você · ⌘3 ajustes. Nos modais de confirmação, **Enter confirma** (botão pré-selecionado) e Esc cancela.
 - **Terminal** — tamanho da fonte.
 - **Comando de inicialização por agente** — ex: trocar `claude` por `claude --permission-mode auto`.
 - **Hooks do Claude Code** — instalar/verificar.

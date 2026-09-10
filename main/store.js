@@ -15,7 +15,7 @@ class Store {
       if (!state.presetCommands) state.presetCommands = {};
       if (!state.settings) state.settings = {};
       if (!state.settings.shortcuts) state.settings.shortcuts = {};
-      if (!state.settings.fontSize) state.settings.fontSize = 13;
+      if (!state.settings.fontSize) state.settings.fontSize = 15;
       return state;
     } catch {
       const state = {
@@ -23,7 +23,7 @@ class Store {
         port: DEFAULT_PORT,
         activeWorkspaceId: null,
         presetCommands: {},
-        settings: { shortcuts: {}, fontSize: 13 },
+        settings: { shortcuts: {}, fontSize: 15 },
         workspaces: []
       };
       this.save(state);
